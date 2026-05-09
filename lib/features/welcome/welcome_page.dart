@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:video_player/video_player.dart';
-import '../auth/auth_page.dart';
+import '../auth/log_in_page.dart';
+import '../auth/sign_up_page.dart';
 
 class _FeatureData {
   final String title;
@@ -85,7 +86,7 @@ class _WelcomePageState extends State<WelcomePage> {
                         )
                       : const SizedBox(key: ValueKey('no-back')),
                 ),
-                const Spacer(),
+                const Spacer(flex: 2),
                 if (!_showSignUp) ...[
                   _buildCarousel(),
                   const SizedBox(height: 16),
@@ -144,7 +145,7 @@ class _WelcomePageState extends State<WelcomePage> {
 
   Widget _buildCarousel() {
     return SizedBox(
-      height: 220,
+      height: 140,
       child: PageView.builder(
         controller: _pageController,
         itemCount: _features.length,
@@ -188,9 +189,7 @@ class _WelcomePageState extends State<WelcomePage> {
         TextButton(
           onPressed: () => Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => const AuthPage(initialIsLogin: true),
-            ),
+            MaterialPageRoute(builder: (_) => const LogInPage()),
           ),
           child: const Text(
             'I already have an account',
@@ -207,68 +206,86 @@ class _WelcomePageState extends State<WelcomePage> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const Text(
-          'Create Your Account',
+          'Create your account',
+          textAlign: TextAlign.center,
           style: TextStyle(
             color: Colors.white,
-            fontSize: 22,
+            fontSize: 28,
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 24),
         ElevatedButton(
           onPressed: _signInWithGoogle,
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.white,
             foregroundColor: Colors.black87,
-            padding: const EdgeInsets.symmetric(vertical: 14),
+            padding: const EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(28),
             ),
-            alignment: Alignment.centerLeft,
           ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Row(
-              children: [
-                const _GoogleIcon(),
-                const SizedBox(width: 12),
-                const Text(
-                  'Continue with Google',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
-                ),
-              ],
-            ),
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _GooglePlaceholder(),
+              SizedBox(width: 12),
+              Text(
+                'Continue with Google',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 12),
         ElevatedButton(
           onPressed: () => Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => const AuthPage(initialIsLogin: false),
-            ),
+            MaterialPageRoute(builder: (_) => const SignUpPage()),
           ),
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF8B5CF6),
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 14),
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black87,
+            padding: const EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(28),
             ),
-            alignment: Alignment.centerLeft,
           ),
-          child: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 4),
-            child: Row(
-              children: [
-                Icon(Icons.mail_outline, size: 20),
-                SizedBox(width: 12),
-                Text(
-                  'Continue with Email',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.mail_outline, size: 20),
+              SizedBox(width: 12),
+              Text(
+                'Continue with Email',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        RichText(
+          textAlign: TextAlign.center,
+          text: const TextSpan(
+            style: TextStyle(color: Colors.white54, fontSize: 12),
+            children: [
+              TextSpan(text: 'By continuing, you agree to our '),
+              TextSpan(
+                text: 'Privacy Policy',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontWeight: FontWeight.bold,
                 ),
-              ],
-            ),
+              ),
+              TextSpan(text: ' and '),
+              TextSpan(
+                text: 'Terms of Service.',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -283,47 +300,38 @@ class _FeatureCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.25),
-            width: 1,
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            data.title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 26,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              data.title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
+          const SizedBox(height: 12),
+          Text(
+            data.body,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 16,
+              height: 1.5,
             ),
-            const SizedBox(height: 12),
-            Text(
-              data.body,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 14,
-                height: 1.5,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _GoogleIcon extends StatelessWidget {
-  const _GoogleIcon();
+// Placeholder — swap this Container for the real Google logo asset when ready.
+class _GooglePlaceholder extends StatelessWidget {
+  const _GooglePlaceholder();
 
   @override
   Widget build(BuildContext context) {
@@ -331,18 +339,8 @@ class _GoogleIcon extends StatelessWidget {
       width: 20,
       height: 20,
       decoration: const BoxDecoration(
-        color: Color(0xFF4285F4),
+        color: Color(0xFFE0E0E0),
         shape: BoxShape.circle,
-      ),
-      alignment: Alignment.center,
-      child: const Text(
-        'G',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 13,
-          fontWeight: FontWeight.bold,
-          height: 1,
-        ),
       ),
     );
   }
@@ -364,13 +362,13 @@ class _PageIndicator extends StatelessWidget {
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeInOut,
           margin: const EdgeInsets.symmetric(horizontal: 4),
-          width: isActive ? 20 : 8,
+          width: 8,
           height: 8,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(4),
+            shape: BoxShape.circle,
             color: isActive
                 ? Colors.white
-                : Colors.white.withValues(alpha: 0.4),
+                : Colors.white.withValues(alpha: 0.35),
           ),
         );
       }),
