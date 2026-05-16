@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
+import '../../services/gemini_service.dart';
+
 class SpeakPracticePage extends StatefulWidget {
   const SpeakPracticePage({super.key});
 
@@ -10,10 +12,16 @@ class SpeakPracticePage extends StatefulWidget {
 
 class _SpeakPracticePageState extends State<SpeakPracticePage> {
   final SpeechToText _speech = SpeechToText();
+  final GeminiService _geminiService = GeminiService();
+
   bool _speechAvailable = false;
   bool _isListening = false;
   String _recognizedText = '';
   String _localeId = 'de_DE';
+
+  bool _loadingFeedback = false;
+  String? _feedbackText;
+  String? _feedbackError;
 
   @override
   void initState() {
@@ -65,6 +73,31 @@ class _SpeakPracticePageState extends State<SpeakPracticePage> {
     }
   }
 
+  Future<void> _getFeedback() async {
+    setState(() {
+      _loadingFeedback = true;
+      _feedbackText = null;
+      _feedbackError = null;
+    });
+    try {
+      final feedback =
+          await _geminiService.getGermanSpeakingFeedback(_recognizedText);
+      if (mounted) {
+        setState(() {
+          _feedbackText = feedback;
+          _loadingFeedback = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _feedbackError = 'Error: $e';
+          _loadingFeedback = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -81,11 +114,29 @@ class _SpeakPracticePageState extends State<SpeakPracticePage> {
                   children: [
                     const SizedBox(height: 8),
                     if (!_speechAvailable)
-                      _ErrorCard()
+                      _ErrorCard(
+                        text:
+                            'Speech recognition is not available on this device.',
+                      )
                     else ...[
                       _InstructionCard(),
                       const SizedBox(height: 16),
                       _RecognizedTextBox(text: _recognizedText),
+                      const SizedBox(height: 16),
+                      _FeedbackButton(
+                        enabled:
+                            _recognizedText.isNotEmpty && !_loadingFeedback,
+                        loading: _loadingFeedback,
+                        onPressed: _getFeedback,
+                      ),
+                      if (_feedbackText != null) ...[
+                        const SizedBox(height: 16),
+                        _FeedbackCard(text: _feedbackText!),
+                      ],
+                      if (_feedbackError != null) ...[
+                        const SizedBox(height: 12),
+                        _ErrorCard(text: _feedbackError!),
+                      ],
                     ],
                     const SizedBox(height: 24),
                   ],
@@ -97,7 +148,11 @@ class _SpeakPracticePageState extends State<SpeakPracticePage> {
                 isListening: _isListening,
                 hasText: _recognizedText.isNotEmpty,
                 onToggle: _toggleListening,
-                onClear: () => setState(() => _recognizedText = ''),
+                onClear: () => setState(() {
+                  _recognizedText = '';
+                  _feedbackText = null;
+                  _feedbackError = null;
+                }),
               ),
           ],
         ),
@@ -182,6 +237,119 @@ class _RecognizedTextBox extends StatelessWidget {
   }
 }
 
+class _FeedbackButton extends StatelessWidget {
+  final bool enabled;
+  final bool loading;
+  final VoidCallback onPressed;
+
+  const _FeedbackButton({
+    required this.enabled,
+    required this.loading,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: enabled ? onPressed : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor:
+              enabled ? const Color(0xFF8B5CF6) : const Color(0xFFB8C4E0),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+        ),
+        child: loading
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              )
+            : const Text(
+                'Get AI Feedback',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+      ),
+    );
+  }
+}
+
+class _FeedbackCard extends StatelessWidget {
+  final String text;
+
+  const _FeedbackCard({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+            decoration: BoxDecoration(
+              color: const Color(0xFF8B5CF6).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Text(
+              'AI Feedback',
+              style: TextStyle(
+                color: Color(0xFF8B5CF6),
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            text,
+            style: const TextStyle(
+              fontSize: 16,
+              color: Colors.black87,
+              height: 1.6,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ErrorCard extends StatelessWidget {
+  final String text;
+
+  const _ErrorCard({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 14, color: Colors.redAccent, height: 1.5),
+      ),
+    );
+  }
+}
+
 class _BottomControls extends StatelessWidget {
   final bool isListening;
   final bool hasText;
@@ -239,24 +407,6 @@ class _BottomControls extends StatelessWidget {
               ),
             ),
         ],
-      ),
-    );
-  }
-}
-
-class _ErrorCard extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: const Text(
-        'Speech recognition is not available on this device.',
-        style: TextStyle(fontSize: 14, color: Colors.redAccent, height: 1.5),
       ),
     );
   }
