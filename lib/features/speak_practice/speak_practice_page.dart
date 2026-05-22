@@ -66,9 +66,11 @@ class _SpeakPracticePageState extends State<SpeakPracticePage> {
         onResult: (result) => setState(() {
           _recognizedText = result.recognizedWords;
         }),
-        localeId: _localeId,
-        listenFor: const Duration(seconds: 60),
-        pauseFor: const Duration(seconds: 3),
+        listenOptions: SpeechListenOptions(
+          localeId: _localeId,
+          listenFor: const Duration(seconds: 60),
+          pauseFor: const Duration(seconds: 3),
+        ),
       );
     }
   }
@@ -392,7 +394,7 @@ class _BottomControls extends StatelessWidget {
               ),
               child: Icon(
                 isListening ? Icons.stop : Icons.mic,
-                color: Colors.white,
+                color: isListening ? Colors.white : Colors.black54,
                 size: 36,
               ),
             ),
