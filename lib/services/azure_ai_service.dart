@@ -7,11 +7,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 const _supabaseUrl = 'https://gfdsibvelqceexcgerah.supabase.co';
 const _supabaseAnonKey = 'sb_publishable_vFZdq8NT56-4deP4eH3xOQ_SQQ4GBW2';
 
-class AzureConversationService {
+/// Single gateway for the app's cloud AI, all proxied through Supabase Edge
+/// Functions backed by Azure (Azure Speech for STT/TTS, Azure AI Foundry for
+/// the LLM). No AI-provider keys live in the client.
+class AzureAiService {
   static const _functionsBase = '$_supabaseUrl/functions/v1';
 
   void _log(String message) {
-    debugPrint('[AzureConversationService] $message');
+    debugPrint('[AzureAiService] $message');
   }
 
   String _bodyPreview(String body) {
@@ -134,5 +137,37 @@ class AzureConversationService {
 
     _log('TTS success: audioBytes=${response.bodyBytes.length}');
     return response.bodyBytes;
+  }
+
+  Future<String> getSpeakingFeedback(String transcript) async {
+    _log('Feedback start: transcriptLength=${transcript.length}, auth=$_authMode');
+    final response = await http.post(
+      Uri.parse('$_functionsBase/speaking-feedback'),
+      headers: {
+        'Authorization': _authHeader,
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'transcript': transcript}),
+    );
+    _log(
+      'Feedback response: status=${response.statusCode}, contentType=${response.headers['content-type']}, bodyBytes=${response.bodyBytes.length}',
+    );
+
+    if (response.statusCode != 200) {
+      _log('Feedback failure body: ${_bodyPreview(response.body)}');
+      throw Exception(
+        'Feedback failed (${response.statusCode}): ${response.body}',
+      );
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    if (json.containsKey('error')) {
+      _log('Feedback JSON error: ${json['error']}');
+      throw Exception('Feedback error: ${json['error']}');
+    }
+
+    final feedback = (json['feedback'] as String?) ?? '';
+    _log('Feedback success: feedbackLength=${feedback.length}');
+    return feedback;
   }
 }

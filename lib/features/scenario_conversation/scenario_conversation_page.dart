@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:record/record.dart';
 
-import '../../services/azure_conversation_service.dart';
+import '../../services/azure_ai_service.dart';
 import '../../services/tts_playback_service.dart';
 import '../../widgets/vocabulary_selectable_text.dart';
 
@@ -30,7 +30,7 @@ class ScenarioConversationPage extends StatefulWidget {
 
 class _ScenarioConversationPageState extends State<ScenarioConversationPage> {
   final AudioRecorder _recorder = AudioRecorder();
-  final AzureConversationService _azure = AzureConversationService();
+  final AzureAiService _azure = AzureAiService();
   late final TtsPlaybackService _tts = TtsPlaybackService(azure: _azure);
   final ScrollController _scrollController = ScrollController();
 

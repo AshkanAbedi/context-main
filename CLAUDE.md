@@ -5,8 +5,7 @@
 ## Commands
 
 ```bash
-flutter run -d <device-id>                       # run on device
-flutter run --dart-define=GEMINI_API_KEY=<key>   # speak-practice needs this
+flutter run -d <device-id>                       # run on device (no AI keys needed)
 flutter devices                                  # list devices
 flutter build apk / flutter build ios
 flutter test                                     # all tests (currently an empty stub)
@@ -39,7 +38,7 @@ lib/features/
   onboarding/              — 3-step flow (name, reason, topics); upserts to `profiles`
   home/                    — top bar (stats + sign-out), feature cards, locked placeholders
   article_reader/          — shows a local article matched to the user's favorite_topics
-  speak_practice/          — on-device speech_to_text → Gemini feedback
+  speak_practice/          — on-device speech_to_text → Azure feedback
   scenario_conversation/   — record audio → Azure STT → chat → TTS playback
   practice/                — Practice tab: saved-vocabulary Dictionary (list, delete, speaker)
 ```
@@ -55,12 +54,14 @@ Cross-cutting feature for capturing words from any learning content into a per-u
 
 ## Services & AI backends
 
-Two parallel stacks (a known inconsistency worth consolidating):
-- `services/gemini_service.dart` — **direct client call** to Gemini for speak-practice feedback. Key via `--dart-define=GEMINI_API_KEY` (compiled into the build).
-- `services/azure_conversation_service.dart` — calls Supabase Edge Functions (`supabase/functions/azure-{stt,chat,tts}`) that hold the Azure keys server-side. Chat is Grok via Azure AI Foundry. Auth header uses the signed-in JWT, falling back to the anon key.
-- `supabase/functions/enrich-vocabulary` — Foundry call powering Save Vocabulary; invoked via `Supabase.functions.invoke` from `vocabulary_service.dart`.
+**AI policy: all cloud AI goes through Supabase Edge Functions backed by Azure — no AI-provider keys in the client.** Two Azure services sit behind the functions: Azure **Speech** (`AZURE_SPEECH_*`) for STT/TTS, and Azure **AI Foundry** (OpenAI-compatible, currently Grok, `AZURE_OPENAI_*`) for the LLM. On-device `speech_to_text` is allowed for live transcription (no cloud key).
 
-Foundry chat functions (`azure-chat`, `enrich-vocabulary`) prompt for JSON and parse defensively (strip ```json fences); they avoid `response_format: json_object`, which triggers a "Failed to reconstruct non-streaming response" 500 on the Grok deployment.
+- `services/azure_ai_service.dart` (`AzureAiService`) — the single AI gateway. Methods: `transcribeAudio`, `chat`, `synthesizeSpeech`, `getSpeakingFeedback`. Calls the edge functions over HTTP with the signed-in JWT (anon-key fallback).
+- `services/tts_playback_service.dart` — wraps `AzureAiService.synthesizeSpeech` + `audioplayers` playback; shared by scenario and the Dictionary speaker.
+- `services/vocabulary_service.dart` — calls `enrich-vocabulary` via `Supabase.functions.invoke`.
+- Edge functions: `azure-stt`, `azure-tts` (Azure Speech); `azure-chat`, `enrich-vocabulary`, `speaking-feedback` (Foundry). New AI capabilities should follow this pattern, not call a provider from the client.
+
+Foundry functions prompt for JSON and parse defensively (strip ```json fences); they avoid `response_format: json_object`, which triggers a "Failed to reconstruct non-streaming response" 500 on the Grok deployment.
 
 ## Data & state
 

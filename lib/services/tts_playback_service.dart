@@ -3,15 +3,15 @@ import 'dart:typed_data';
 
 import 'package:audioplayers/audioplayers.dart';
 
-import 'azure_conversation_service.dart';
+import 'azure_ai_service.dart';
 
 /// Fetches Azure TTS audio and plays it back. Shared by any screen that needs
 /// to speak German text, so playback logic lives in one place.
 class TtsPlaybackService {
-  TtsPlaybackService({AzureConversationService? azure})
-    : _azure = azure ?? AzureConversationService();
+  TtsPlaybackService({AzureAiService? azure})
+    : _azure = azure ?? AzureAiService();
 
-  final AzureConversationService _azure;
+  final AzureAiService _azure;
   final AudioPlayer _player = AudioPlayer();
 
   // Unique-ish per instance so concurrent screens don't overwrite each other.
